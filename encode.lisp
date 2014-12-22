@@ -56,6 +56,9 @@
 (defmethod encode ((object integer) &optional (stream *standard-output*))
   (princ object stream))
 
+(defmethod encode ((symbol symbol) &optional (stream *standard-output*))
+  (yason:encode (symbol-name symbol) stream))
+
 (defmacro with-aggregate/object ((stream opening-char closing-char) &body body)
   "Set up serialization context for aggregate serialization with the
   object encoder."
@@ -91,7 +94,7 @@
                  (encode-key/value key value stream)))
              object)
     object))
-                 
+
 (defmethod encode ((object vector) &optional (stream *standard-output*))
   (with-aggregate/object (stream #\[ #\])
     (loop for value across object
@@ -106,10 +109,6 @@
         (encode value stream)))
     object))
 
-(defun encode-assoc-key/value (key value stream)
-  (let ((string (string key)))
-    (encode-key/value string value stream)))
-
 (defun encode-alist% (object &optional (stream *standard-output*))
   (with-aggregate/object (stream #\{ #\})
     (loop for (key . value) in object
@@ -120,9 +119,9 @@
                  (format stream "\"~a\":" key)
                  (encode value stream))
                (progn
-                 (encode-assoc-key/value key value stream)))))
+                 (encode-key/value key value stream)))))
     object))
-  
+
 (defun encode-plist% (object &optional (stream *standard-output*))
   (with-aggregate/object (stream #\{ #\})
     (loop for (key value) on object by #'cddr
@@ -132,7 +131,7 @@
                (progn
                  (format stream "\"~a\":" key)
                  (encode value stream))
-               (encode-assoc-key/value key value stream))))
+               (encode-key/value key value stream))))
     object))
 
 (defvar *list->object-convention* :keyword-string)
